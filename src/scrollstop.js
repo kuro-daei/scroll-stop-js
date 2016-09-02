@@ -7,41 +7,47 @@
 /* globals $sf , __PRODUCTION__ */
 export default class ScrollStop{
 
-  constructor(elm, sleep, limit = 1, marginTop = 0, marginBottom = 0){
+  constructor(elm, sleep, limit = 1){
     this._elm = elm;
     this._sleep = sleep;
     this._limit = limit;
-    this._marginTop = marginTop;
-    this._marginBottom = marginBottom;
     if(typeof __PRODUCTION__ === 'undefined'){
       this._log = (msg) => window.console.log(msg);
     }else{
       this._log = (msg) => {return;};
     }
-    this._observerListener = () => this._observer();
-    this._scrollListener = () => this._preventDefault();
+    this._observerListener = (evt) => this._observer(evt);
+    this._scrollListener = (evt) => this._preventDefault(evt);
     this._stopping = false;
     this._setObservers();
     this._lastIsInview = this._isInview();
+    this._y = 0;
+    if(window.Modernizr && window.Modernizr.passiveeventlisteners){
+      this._listener_opt = {passive: true};
+    }else{
+      this._listener_opt = false;
+    }
   }
 
   _setObservers(){
     this._log('_setObservers');
-    window.addEventListener('scroll', this._observerListener, false);
-    window.addEventListener('wheel', this._observerListener, false);
-    window.addEventListener('touchmove', this._observerListener, false);
+    window.addEventListener('scroll', this._observerListener, this._listener_opt);
+    window.addEventListener('wheel', this._observerListener, this._listener_opt);
+    window.addEventListener('touchmove', this._observerListener, this._listener_opt);
+    window.addEventListener('touchstart', this._observerListener, this._listener_opt);
     this._interval = window.setInterval(this._observerListener, 500);
   }
 
   _removeObservers(){
     this._log('_removeObservers');
-    window.removeEventListener('scroll', this._observerListener, false);
-    window.removeEventListener('wheel', this._observerListener, false);
-    window.removeEventListener('touchmove', this._observerListener, false);
+    window.removeEventListener('scroll', this._observerListener, this._listener_opt);
+    window.removeEventListener('wheel', this._observerListener, this._listener_opt);
+    window.removeEventListener('touchmove', this._observerListener, this._listener_opt);
+    window.removeEventListener('touchstart', this._observerListener, this._listener_opt);
     window.clearInterval(this._interval);
   }
 
-  _observer(){
+  _observer(evt){
     if(this._stopping || this._lastIsInview === this._isInview()){
       return;
     }
@@ -53,6 +59,7 @@ export default class ScrollStop{
       this._limit -= 1;
       this._log('Remain Stop Count : ' + this._limit);
       if(this._limit <= 0){
+        this._elm.dispatchEvent(new Event('scrollStopCanceled'));
         this._removeObservers();
       }
     }
@@ -70,17 +77,26 @@ export default class ScrollStop{
     return isInview;
   }
 
-  _preventDefault(){
+  _preventDefault(evt){
     this._log('_preventDefault');
-    window.event.preventDefault();
-    window.event.returnValue = false;
+    evt.preventDefault();
+    evt.returnValue = false;
   }
 
   _disableScroll(sleep){
-    this._log('_disableScroll w/ sleep:' + sleep + 'ms');
+    this._log('_disableScroll sleep:' + sleep + 'ms');
+    this._y = this._y > 0 ? this._y : window.scrollY;
+    window.scrollTo(window.scrollX, this._y);
+    this._request = null;
+    var disableScrollByRAF = () => {
+      window.scrollTo(window.scrollX, this._y);
+      this._request = window.requestAnimationFrame(disableScrollByRAF);
+    };
+    this._request = window.requestAnimationFrame(disableScrollByRAF);
     window.addEventListener('wheel', this._scrollListener, false);
     window.addEventListener('touchmove', this._scrollListener, false);
     this._stopping = true;
+    this._elm.dispatchEvent(new Event('scrollDisabled'));
     return new Promise(function(resolve, reject){
       setTimeout(resolve, sleep);
     });
@@ -88,9 +104,12 @@ export default class ScrollStop{
 
   _enableScroll(){
     this._log('_enableScroll');
+    window.cancelAnimationFrame(this._request);
+    this._y = 0;
     window.removeEventListener('wheel', this._scrollListener, false);
     window.removeEventListener('touchmove', this._scrollListener, false);
     this._stopping = false;
+    this._elm.dispatchEvent(new Event('scrollEnabled'));
   }
 
 }
