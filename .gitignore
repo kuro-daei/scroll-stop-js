@@ -39,3 +39,5 @@ jspm_packages
 
 demo/*.js
 demo/*.map
+
+dist/

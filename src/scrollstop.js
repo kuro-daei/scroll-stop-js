@@ -52,16 +52,16 @@ export default class ScrollStop{
       return;
     }
     this._lastIsInview = this._isInview();
-    if(this._lastIsInview){
+    if(this._lastIsInview && this._limit > 0){
       let msec = this._sleep * 1000;
       this._disableScroll(msec).then(() => this._enableScroll());
       this._lastIsInview = true;
       this._limit -= 1;
       this._log('Remain Stop Count : ' + this._limit);
-      if(this._limit <= 0){
-        this._elm.dispatchEvent(new Event('scrollStopCanceled'));
-        this._removeObservers();
-      }
+    }
+    if(this._limit <= 0){
+      this._elm.dispatchEvent(new Event('scrollStopCanceled', {bubbles: true}));
+      this._removeObservers();
     }
   }
 
@@ -96,7 +96,7 @@ export default class ScrollStop{
     window.addEventListener('wheel', this._scrollListener, false);
     window.addEventListener('touchmove', this._scrollListener, false);
     this._stopping = true;
-    this._elm.dispatchEvent(new Event('scrollDisabled'));
+    this._elm.dispatchEvent(new Event('scrollDisabled', {bubbles: true}));
     return new Promise(function(resolve, reject){
       setTimeout(resolve, sleep);
     });
@@ -109,7 +109,7 @@ export default class ScrollStop{
     window.removeEventListener('wheel', this._scrollListener, false);
     window.removeEventListener('touchmove', this._scrollListener, false);
     this._stopping = false;
-    this._elm.dispatchEvent(new Event('scrollEnabled'));
+    this._elm.dispatchEvent(new Event('scrollEnabled', {bubbles: true}));
   }
 
 }

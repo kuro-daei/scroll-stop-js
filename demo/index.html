@@ -29,7 +29,7 @@ div#target {
 <script>
  document.addEventListener('DOMContentLoaded', function(){
    var $target = document.querySelector('#target');
-   window.DacScrollStop($target, 1.0, 5);
+   window.scrollStop($target, 1.0, 5);
    $target.addEventListener('scrollDisabled', function(){
      $target.style.backgroundColor = '#FFFF00';
    }, false);

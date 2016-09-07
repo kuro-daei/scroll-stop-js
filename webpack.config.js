@@ -1,6 +1,8 @@
 const path = require('path');
 const webpack = require('webpack');
-const defineProduction = new webpack.DefinePlugin({__PRERELEASE__: 'true'});
+
+const defineProduction = new webpack.DefinePlugin({__PRODUCTION__: 'true'});
+
 const uglify = new webpack.optimize.UglifyJsPlugin({
   compress: {warnings: false},
   output: {comments: false}
@@ -15,16 +17,9 @@ const babel = {
 
 var configs = {
   "production": {
-    entry: {"dist/dac-ivt-production.js": './src/dac-ivt-controller.js'},
+    entry: {"dist/dac-scroll-stop.js": './src/main.js'},
     output: { filename: "[name]" },
     plugins: [ uglify, defineProduction ],
-    module: { loaders: [ babel ] },
-  },
-  "staging": {
-    entry: {"demo/dac-ivt-staging.js": './src/dac-ivt-controller.js'},
-    output: { filename: "[name]" },
-    devtool: 'source-map',
-    plugins: [ uglify  ],
     module: { loaders: [ babel ] },
   },
   "develop":{
